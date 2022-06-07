@@ -64,35 +64,35 @@ WeightedList<string> myWL = new(rand);
 ```cs
 public class WeightedList<T> : IEnumerable<T>
 {
-    public WeightedList(Random rand = null)
-    public WeightedList(List<WeightedListItem<T>> listItems, Random rand = null)
+    public WeightedList(Random rand = null);
+    public WeightedList(List<WeightedListItem<T>> listItems, Random rand = null);
 
-    public T this[int index]
-    public int Count
-    public int TotalWeight
-    public IReadOnlyList<T> Items
+    public T this[int index];
+    public int Count;
+    public int TotalWeight;
+    public IReadOnlyList<T> Items;
     public WeightErrorHandlingType BadWeightErrorHandling = SetWeightToOne;
 
-    public void Add(T item, int weight)
-    public T Next() 
+    public void Add(T item, int weight);
+    public T Next();
 
-    public void Clear()
-    public void Contains(T item)
-    public int IndexOf(T item)
-    public void Insert(int index, T item, int weight)
-    public IEnumerator<T> GetEnumerator()
-    public int GetWeightAtIndex(int index)
-    public int GetWeightOf(T item)
-    public void Remove(T item)
-    public void RemoveAt(int index)
-    public void SetWeight(T item, int newWeight)
-    public void SetWeightAtIndex(int index, int newWeight)
-    public string ToString()
+    public void Clear();
+    public void Contains(T item);
+    public int IndexOf(T item);
+    public void Insert(int index, T item, int weight);
+    public IEnumerator<T> GetEnumerator();
+    public int GetWeightAtIndex(int index);
+    public int GetWeightOf(T item);
+    public void Remove(T item);
+    public void RemoveAt(int index);
+    public void SetWeight(T item, int newWeight);
+    public void SetWeightAtIndex(int index, int newWeight);
+    public string ToString();
 }
 
 public class WeightedListItem<T>
 {
-    public WeightedListItem(T item, int weight)
+    public WeightedListItem(T item, int weight);
 }
 
 public enum WeightErrorHandlingType
