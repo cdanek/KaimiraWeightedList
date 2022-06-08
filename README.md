@@ -1,4 +1,4 @@
-# KaimiraGames Weighted List
+# Kaimira Weighted List
 
 ## Introduction
 
@@ -112,7 +112,7 @@ public enum WeightErrorHandlingType
 
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Acknowledgments
 
