@@ -1,3 +1,6 @@
+// License: MIT
+// Source, Docs, Issues: https://github.com/cdanek/kaimira-weighted-list/
+
 using System.Text;
 using System;
 using System.Collections;
@@ -6,18 +9,14 @@ using static KaimiraGames.WeightErrorHandlingType;
 
 namespace KaimiraGames
 {
+    /// <summary>
+    /// This implements an algorithm for sampling from a discrete probability distribution via a generic list 
+    /// with extremely fast O(1) get operations and small (close to minimally small) O(n) space complexity and 
+    /// O(n) CRUD complexity. In other words, you can add any item of type T to a List with an integer weight, 
+    /// and get a random item from the list with probability ( weight / sum-weights ).
+    /// </summary>
     public class WeightedList<T> : IEnumerable<T>
     {
-        public WeightErrorHandlingType BadWeightErrorHandling { get; set; } = SetWeightToOne;
-
-        private readonly List<T> _list = new List<T>();
-        private readonly List<int> _weights = new List<int>();
-        private readonly List<int> _probabilities = new List<int>(); // I like the idea from https://github.com/joseftw/ - scale these up so they're ints. (ie, multiply times Count)
-        private readonly List<int> _alias = new List<int>();
-        private readonly Random _rand;
-        private int _totalWeight;
-        private bool _areAllProbabilitiesIdentical = false;
-
         /// <summary>
         /// Create a new WeightedList with an optional System.Random.
         /// </summary>
@@ -30,7 +29,7 @@ namespace KaimiraGames
         /// <summary>
         /// Create a WeightedList with the provided items and an optional System.Random.
         /// </summary>
-        public WeightedList(List<WeightedListItem<T>> listItems, Random rand = null)
+        public WeightedList(ICollection<WeightedListItem<T>> listItems, Random rand = null)
         {
             _rand = rand ?? new Random();
             foreach (WeightedListItem<T> item in listItems)
@@ -41,93 +40,15 @@ namespace KaimiraGames
             Recalculate();
         }
 
-        public T Next() 
+        public WeightErrorHandlingType BadWeightErrorHandling { get; set; } = SetWeightToOne;
+
+        public T Next()
         {
             if (Count == 0) return default;
-            int nextInt = _rand.Next(Count); // 0 - n
-            if (_areAllProbabilitiesIdentical) return _list[nextInt]; 
+            int nextInt = _rand.Next(Count); 
+            if (_areAllProbabilitiesIdentical) return _list[nextInt];
             int nextProbability = _rand.Next(_totalWeight);
-            return (nextProbability < _probabilities[nextInt]) ? _list[nextInt] : _list[_alias[nextInt]]; 
-        }
-
-        /// <summary>
-        /// https://www.keithschwarz.com/darts-dice-coins/
-        /// </summary>
-        private void Recalculate()
-        {
-            _alias.Clear(); // STEP 1
-            _probabilities.Clear(); // STEP 1
-
-            _totalWeight = 0;
-            _areAllProbabilitiesIdentical = false;
-            List<int> scaledProbabilityNumerator = new List<int>(Count);
-            List<int> small = new List<int>(Count); // STEP 2
-            List<int> large = new List<int>(Count); // STEP 2
-            int minWeight = 0, maxWeight = 0;
-            bool isFirst = true;
-            foreach (int weight in _weights)
-            {
-                if (isFirst)
-                {
-                    minWeight = maxWeight = weight;
-                    isFirst = false;
-                }
-                minWeight = (weight < minWeight) ? weight : minWeight;
-                maxWeight = (maxWeight < weight) ? weight : maxWeight;
-                _totalWeight += weight;
-                scaledProbabilityNumerator.Add(weight * Count); // STEP 3 -- eg for 1/20, 2/20, 3/20, 4/20, 9/20 = {5, 10, 15, 20, 45} - totalweight = 19 (4/5 * 5 = 20/19 3/9 * 5 = 15/19
-                _alias.Add(0);
-                _probabilities.Add(0);
-            }
-
-            // Degenerate case, all probabilities are equal.
-            if (minWeight == maxWeight)
-            {
-                _areAllProbabilitiesIdentical = true;
-                return; 
-            }
-
-            // STEP 4
-            for (int i = 0; i < Count; i++)
-            {
-                if (scaledProbabilityNumerator[i] < _totalWeight) 
-                    small.Add(i);
-                else 
-                    large.Add(i);
-            }
-
-            // STEP 5
-            while (small.Count > 0 && large.Count > 0)
-            {
-                int l = small[0]; // 5.1
-                small.RemoveAt(0);
-                int g = large[0]; // 5.2
-                large.RemoveAt(0);
-                _probabilities[l] = scaledProbabilityNumerator[l]; // 5.3
-                _alias[l] = g; // 5.4
-                int tmp = scaledProbabilityNumerator[g] + scaledProbabilityNumerator[l] - _totalWeight; // 5.5, even though using ints for this algorithm is stable
-                scaledProbabilityNumerator[g] = tmp;
-                if (tmp < _totalWeight)
-                    small.Add(g); // 5.6 the large is now in the small pile
-                else
-                    large.Add(g); // 5.7 add the large back to the large pile
-            }
-
-            // STEP 6
-            while (large.Count > 0)
-            {
-                int g = large[0]; // 6.1
-                large.RemoveAt(0);
-                _probabilities[g] = _totalWeight; //6.1
-            }
-
-            // STEP 7 - I don't think this can happen with ints as the weight.
-            while (small.Count > 0)
-            {
-                int l = small[0]; // 7.1
-                small.RemoveAt(0);
-                _probabilities[l] = _totalWeight;
-            }
+            return (nextProbability < _probabilities[nextInt]) ? _list[nextInt] : _list[_alias[nextInt]];
         }
 
         public int TotalWeight => _totalWeight;
@@ -142,6 +63,15 @@ namespace KaimiraGames
         {
             _list.Add(item);
             _weights.Add(FixWeight(weight));
+            Recalculate();
+        }
+        public void Add(ICollection<WeightedListItem<T>> listItems)
+        {
+            foreach (WeightedListItem<T> listItem in listItems)
+            {
+                _list.Add(listItem._item);
+                _weights.Add(FixWeight(listItem._weight));
+            }
             Recalculate();
         }
 
@@ -179,19 +109,11 @@ namespace KaimiraGames
 
         public T this[int index] => _list[index];
 
-        public int Count => _list.Count; // O(1), no need to cache.
+        public int Count => _list.Count;
 
-        public void SetWeight(T item, int newWeight)
-        {
-            int index = IndexOf(item);
-            SetWeightAtIndex(index, FixWeight(newWeight));
-        }
+        public void SetWeight(T item, int newWeight) => SetWeightAtIndex(IndexOf(item), FixWeight(newWeight));
 
-        public int GetWeightOf(T item)
-        {
-            int index = IndexOf(item);
-            return GetWeightAtIndex(index);
-        }
+        public int GetWeightOf(T item) => GetWeightAtIndex(IndexOf(item));
 
         public void SetWeightAtIndex(int index, int newWeight)
         {
@@ -222,6 +144,95 @@ namespace KaimiraGames
             return sb.ToString();
         }
 
+        private readonly List<T> _list = new List<T>();
+        private readonly List<int> _weights = new List<int>();
+        private readonly List<int> _probabilities = new List<int>();
+        private readonly List<int> _alias = new List<int>();
+        private readonly Random _rand;
+        private int _totalWeight;
+        private bool _areAllProbabilitiesIdentical = false;
+        /// <summary>
+        /// https://www.keithschwarz.com/darts-dice-coins/
+        /// </summary>
+        private void Recalculate()
+        {
+            _totalWeight = 0;
+            _areAllProbabilitiesIdentical = false;
+            int minWeight = 0;
+            int maxWeight = 0;
+            bool isFirst = true;
+
+            _alias.Clear(); // STEP 1
+            _probabilities.Clear(); // STEP 1
+
+            List<int> scaledProbabilityNumerator = new List<int>(Count);
+            List<int> small = new List<int>(Count); // STEP 2
+            List<int> large = new List<int>(Count); // STEP 2
+            foreach (int weight in _weights)
+            {
+                if (isFirst)
+                {
+                    minWeight = maxWeight = weight;
+                    isFirst = false;
+                }
+                minWeight = (weight < minWeight) ? weight : minWeight;
+                maxWeight = (maxWeight < weight) ? weight : maxWeight;
+                _totalWeight += weight;
+                scaledProbabilityNumerator.Add(weight * Count); // STEP 3 
+                _alias.Add(0);
+                _probabilities.Add(0);
+            }
+
+            // Degenerate case, all probabilities are equal.
+            if (minWeight == maxWeight)
+            {
+                _areAllProbabilitiesIdentical = true;
+                return;
+            }
+
+            // STEP 4
+            for (int i = 0; i < Count; i++)
+            {
+                if (scaledProbabilityNumerator[i] < _totalWeight)
+                    small.Add(i);
+                else
+                    large.Add(i);
+            }
+
+            // STEP 5
+            while (small.Count > 0 && large.Count > 0)
+            {
+                int l = small[0]; // 5.1
+                small.RemoveAt(0);
+                int g = large[0]; // 5.2
+                large.RemoveAt(0);
+                _probabilities[l] = scaledProbabilityNumerator[l]; // 5.3
+                _alias[l] = g; // 5.4
+                int tmp = scaledProbabilityNumerator[g] + scaledProbabilityNumerator[l] - _totalWeight; // 5.5, even though using ints for this algorithm is stable
+                scaledProbabilityNumerator[g] = tmp;
+                if (tmp < _totalWeight)
+                    small.Add(g); // 5.6 the large is now in the small pile
+                else
+                    large.Add(g); // 5.7 add the large back to the large pile
+            }
+
+            // STEP 6
+            while (large.Count > 0)
+            {
+                int g = large[0]; // 6.1
+                large.RemoveAt(0);
+                _probabilities[g] = _totalWeight; //6.1
+            }
+
+            // STEP 7 - Can't happen for this implementation but left in source to match Keith Schwarz's algorithm
+            //while (small.Count > 0)
+            //{
+            //    int l = small[0]; // 7.1
+            //    small.RemoveAt(0);
+            //    _probabilities[l] = _totalWeight;
+            //}
+        }
+
         // Adjust bad weights silently.
         internal static int FixWeightSetToOne(int weight) => (weight <= 0) ? 1 : weight;
 
@@ -231,11 +242,15 @@ namespace KaimiraGames
         private int FixWeight(int weight)
         {
             if (BadWeightErrorHandling == ThrowExceptionOnAdd) return FixWeightExceptionOnAdd(weight);
-            if (BadWeightErrorHandling == ThrowExceptionOnNext) return weight;
             return FixWeightSetToOne(weight);
         }
     }
 
+    /// <summary>
+    /// A single item for a list with matching T. Create one or more WeightedListItems, add to a Collection
+    /// and Add() to the WeightedList for a single calculation pass.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class WeightedListItem<T>
     {
         internal readonly T _item;
@@ -251,7 +266,6 @@ namespace KaimiraGames
     public enum WeightErrorHandlingType
     {
         SetWeightToOne, // Default
-        ThrowExceptionOnAdd,
-        ThrowExceptionOnNext,
+        ThrowExceptionOnAdd, // Throw exception for adding non-positive weight.
     }
 }
