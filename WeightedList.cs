@@ -51,6 +51,19 @@ namespace KaimiraGames
             return (nextProbability < _probabilities[nextInt]) ? _list[nextInt] : _list[_alias[nextInt]];
         }
 
+        public void AddWeightToAll(int weight)
+        {
+            if (weight < 0) throw new ArgumentException("Cannot add negative weight to members of a weighted list.");
+            for (int i = 0; i < Count; i++) _weights[i] += weight;
+            Recalculate();
+        }
+
+        public void SetWeightOfAll(int weight)
+        {
+            for (int i = 0; i < Count; i++) _weights[i] = FixWeight(weight);
+            Recalculate();
+        }
+
         public int TotalWeight => _totalWeight;
 
         public IReadOnlyList<T> Items => _list.AsReadOnly();
@@ -151,6 +164,7 @@ namespace KaimiraGames
         private readonly Random _rand;
         private int _totalWeight;
         private bool _areAllProbabilitiesIdentical = false;
+
         /// <summary>
         /// https://www.keithschwarz.com/darts-dice-coins/
         /// </summary>
@@ -239,11 +253,8 @@ namespace KaimiraGames
         // Throw an exception when adding a bad weight.
         internal static int FixWeightExceptionOnAdd(int weight) => (weight <= 0) ? throw new ArgumentException("Weight cannot be non-positive") : weight;
 
-        private int FixWeight(int weight)
-        {
-            if (BadWeightErrorHandling == ThrowExceptionOnAdd) return FixWeightExceptionOnAdd(weight);
-            return FixWeightSetToOne(weight);
-        }
+        private int FixWeight(int weight) => (BadWeightErrorHandling == ThrowExceptionOnAdd) ? FixWeightExceptionOnAdd(weight) : FixWeightSetToOne(weight);
+
     }
 
     /// <summary>
