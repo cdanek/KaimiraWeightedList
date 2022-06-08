@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This implements an algorithm for sampling from a discrete probability distribution via a generic list with extremely fast `O(1)` get operations and small (close to minimally small) `O(n)` space complexity and `O(n)` CRUD complexity. 
+This implements an algorithm (designed by Michael Vose) for sampling from a discrete probability distribution via a generic list with extremely fast `O(1)` get operations and small (close to minimally small) `O(n)` space complexity and `O(n)` CRUD complexity. 
 
 In other words, you can add any item of type `T` to a `List` with an integer weight, and get a random item from the list with probability ( weight / sum-weights ). The solution is implemented using the Walker-Vose "Alias Method". 
 
@@ -110,12 +110,20 @@ public enum WeightErrorHandlingType
 }
 ```
 
+## Notes
+
+This algorithm is strictly better (better across all dimensions) than any others known to the author for all of "generate" (`Next()`), "CRUD" (`private Recalculate()`, called on any operations that change any weight) and space complexity (in the resting state, elements are limited to one `List<T>`, one `enum`, one `int`, one `Random`, one bool, and three `List<int>`s; in the calculating states we add a few working variables, but maintain O(n) requirements).
+
+I have made one small improvement based on the idea from [joseftw](https://github.com/joseftw/), which eliminates all of the instability of floating point numbers by enforcing integer weight. This leads to "perfect" filling of the alias/probability matrix (described by Keith Schwarz) with the downside of limiting small probability to `1 / Int32.IntMax` in c# = approximately 1 in 2.1 million. If you need accurate probabilities with greater precision for very small chances, you could simply change all instances of `int` to `long`, giving you small probabilities down to 1 in 9.2 quintillion (9.2e18). 
+
+Additionally, you will get an overflow exception if the sum of your weights exceeds 2.1 million. Again, if you need accurate probabilities with enough items such that the total weight exceeds this, I'd suggest either evaluating your weights and "reducing" them by an acceptable amount (`weight = (int)(weight/minweight)`). If there's a need for this, open an issue and I'll create an API call for it, or you can fork and create your own with `long`, as described above.
+
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Acknowledgments
 
-* [Walker-Vose Alias algorithm](https://en.wikipedia.org/wiki/Alias_method)
-* [joseftw's implementation](https://github.com/joseftw/jos.weightedresult)
+* [Michael Vose's Alias algorithm](https://en.wikipedia.org/wiki/Alias_method)
+* [joseftw's implementation, C#](https://github.com/joseftw/jos.weightedresult)
 * [Keith Schwarz's excellent explanation of why this works](https://www.keithschwarz.com/darts-dice-coins/)
