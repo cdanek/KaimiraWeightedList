@@ -39,21 +39,33 @@ WeightedList<string> myWL = new(myItems);
 
 ### Bad Weights
 
-Programming is opinionated, and I'm of the opinion that an error in weighting shouldn't throw an exception - it's better to get bad data than have your application crash. If you'd like your application to throw exceptions on non-positive weights (on `Add()`), then configure like so:
+Programming is opinionated, and I'm of the opinion that an error in weighting shouldn't throw an exception - it's better to get bad data than have your application crash. Using the default settings will prevent the weight of any item from ever going below 1 using `AddWeightToAll()`, `SubtractWeightFromAll()`, `SetWeightOfAll()`, `SetWeight()`, `SetWeightAtIndex()`, `Add()`, or `Insert()`. **Note that this is the default behaviour (silent adjustment of bad weights to 1).**
+
+If, however, you'd like your application to throw exceptions on non-positive weights (on `Add()`), then configure like so:
 
 ```cs
 WeightedList<string> myWL = new();
 myWL.BadWeightErrorHandling = WeightErrorHandlingType.ThrowExceptionOnAdd;
+
 myWL.Add("Goodbye, World.", 0); // ArgumentException - Weight cannot be non-positive.
+myWL.Insert("Goodbye, World.", 0); // ArgumentException - Weight cannot be non-positive.
+myWL.Add("Goodbye, World.", 5); // OK
+myWL.SetWeight("Goodbye, World.", 0); // ArgumentException - Weight cannot be non-positive.
+myWL.SetWeightOfAll(0); // ArgumentException - Weight cannot be non-positive.
+myWL.SetWeightAtIndex(0, 0); // ArgumentException - Weight cannot be non-positive.
+myWL.SubtractWeightFromAll(5); // ArgumentException - Subtracting 5 from all items would set weight to non-positive for at least one element.
+myWL.AddWeightFromAll(-5); // ArgumentException - Subtracting 5 from all items would set weight to non-positive for at least one element.
+myWL.SubtractWeightFromAll(4); // OK - weight is now 1 
 
 myWL.BadWeightErrorHandling = WeightErrorHandlingType.SetWeightToOne; // default
 myWL.Add("Hello, World.", 0); // No error, but will set the weight to 1.
 myWL.Add("Hello, World.", -1); // Also will set the weight to 1.
+// ... etc ... All error actions set the weight of individual elements that would be non-positive to 1.
 ```
 
 ### Seeded Random
 
-If you'd like to see the list with your own System.Random, do so with:
+If you'd like to seed the list with your own System.Random, do so with:
 
 ```cs
 System.Random rand = new System.Random();
@@ -66,7 +78,7 @@ I've added a number of methods that appear in `IList<T>`.
 
 Be aware that while you are _able_ to modify the weight while iterating (by getting an iterator, getting the index of the element, and setting the weight of the element at said index) is not a great idea. It works, but will recalculate on every iteration (which means O(n^2) performance for your loop). 
 
-If you want to increment the weight of everything in the list, use `AddWeightToAll(int)` or `SetWeightOfAll(int)`.
+If you want to modify the weight of everything in the list, use `AddWeightToAll(int)`, `SubtractWeightFromAll(int)`, or `SetWeightOfAll(int)`.
 
 ```cs
 public class WeightedList<T> : IEnumerable<T>
@@ -77,6 +89,8 @@ public class WeightedList<T> : IEnumerable<T>
     public T this[int index];
     public int Count;
     public int TotalWeight;
+    public int MinWeight;
+    public int MaxWeight;
     public IReadOnlyList<T> Items;
     public WeightErrorHandlingType BadWeightErrorHandling = SetWeightToOne;
 
@@ -84,17 +98,20 @@ public class WeightedList<T> : IEnumerable<T>
     public void Add(ICollection<WeightedListItem<T>> listItems);
     public T Next();
 
+    public void AddWeightToAll(int weight);
     public void Clear();
     public void Contains(T item);
-    public int IndexOf(T item);
-    public void Insert(int index, T item, int weight);
     public IEnumerator<T> GetEnumerator();
     public int GetWeightAtIndex(int index);
     public int GetWeightOf(T item);
+    public int IndexOf(T item);
+    public void Insert(int index, T item, int weight);
     public void Remove(T item);
     public void RemoveAt(int index);
     public void SetWeight(T item, int newWeight);
+    public void SetWeightOfAll(int weight);
     public void SetWeightAtIndex(int index, int newWeight);
+    public void SubtractWeightFromAll(int weight);
     public string ToString();
 }
 
@@ -112,11 +129,15 @@ public enum WeightErrorHandlingType
 
 ## Notes
 
-This algorithm is strictly better (better across all dimensions) than any others known to the author for all of "generate" (`Next()`), "CRUD" (`private Recalculate()`, called on any operations that change any weight) and space complexity (in the resting state, elements are limited to one `List<T>`, one `enum`, one `int`, one `Random`, one bool, and three `List<int>`s; in the calculating states we add a few working variables, but maintain O(n) requirements).
+This algorithm is strictly better (better across all dimensions) than any others known to the author for each of:
 
-I have made one small improvement based on the idea from [joseftw](https://github.com/joseftw/), which eliminates all of the instability of floating point numbers by enforcing integer weight. This leads to "perfect" filling of the alias/probability matrix (described by Keith Schwarz) with the downside of limiting small probability to `1 / Int32.IntMax` in c# = approximately 1 in 2.1 million. If you need accurate probabilities with greater precision for very small chances, you could simply change all instances of `int` to `long`, giving you small probabilities down to 1 in 9.2 quintillion (9.2e18). 
+1) Generate operations (`Next()`) - O(1)
+2) "CRUD" operations (`private Recalculate()`, called on any operations that change any weight) - O(n)
+3) Memory usage / Space complexity (in the resting state, elements are limited to one `List<T>`, one `enum`, three `int`s, one `Random`, one `bool`, and three `List<int>`s; in the calculating states we add a few working variables) - O(n)
 
-Additionally, you will get an overflow exception if the sum of your weights exceeds 2.1 million. Again, if you need accurate probabilities with enough items such that the total weight exceeds this, I'd suggest either evaluating your weights and "reducing" them by an acceptable amount (`weight = (int)(weight/minweight)`). If there's a need for this, open an issue and I'll create an API call for it, or you can fork and create your own with `long`, as described above.
+I have made one small improvement based on the idea from [joseftw](https://github.com/joseftw/), which eliminates all of the instability of floating point numbers by enforcing integer weight. This leads to "perfect" filling of the alias/probability matrix (described by Keith Schwarz) with the downside of limiting small probability to `1 / Int32.IntMax` in C#: approximately 1 in 2.1 million. If you need accurate probabilities with greater precision for very small chances, you could simply change all instances of `int` to `long`, giving you small probabilities down to 1 in 9.2 quintillion (9.2e18) at the cost of increased memory use. You'd also need to upgrade the Random number generator, as `Random.NextInt64()` doesn't appear in .NET until .NET6 (and I didn't want to place that requirement here).
+
+Additionally, you will get an overflow exception if the sum of your weights exceeds 2.1 million. Again, if you need accurate probabilities with enough items such that the total weight exceeds this, I'd suggest either evaluating your weights and "reducing" them by an acceptable amount periodicially.
 
 ## License
 
