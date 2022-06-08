@@ -67,7 +67,7 @@ namespace KaimiraGames
         public void SetWeightOfAll(int weight)
         {
             if (weight <= 0 && BadWeightErrorHandling == ThrowExceptionOnAdd)
-                throw new ArgumentException($"Cannot set weight to <1.");
+                throw new ArgumentException($"Weight cannot be non-positive.");
             for (int i = 0; i < Count; i++) _weights[i] = FixWeight(weight);
             Recalculate();
         }
