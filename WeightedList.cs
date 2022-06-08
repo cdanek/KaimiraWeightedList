@@ -45,7 +45,7 @@ namespace KaimiraGames
         public T Next()
         {
             if (Count == 0) return default;
-            int nextInt = _rand.Next(Count); 
+            int nextInt = _rand.Next(Count);
             if (_areAllProbabilitiesIdentical) return _list[nextInt];
             int nextProbability = _rand.Next(_totalWeight);
             return (nextProbability < _probabilities[nextInt]) ? _list[nextInt] : _list[_alias[nextInt]];
@@ -53,10 +53,14 @@ namespace KaimiraGames
 
         public void AddWeightToAll(int weight)
         {
-            if (weight < 0) throw new ArgumentException("Cannot add negative weight to members of a weighted list.");
-            for (int i = 0; i < Count; i++) _weights[i] += weight;
+            for (int i = 0; i < Count; i++)
+            {
+                _weights[i] = FixWeight(_weights[i] + weight);
+            }
             Recalculate();
         }
+
+        public void SubtractWeightFromAll(int weight) => AddWeightToAll(weight * -1);
 
         public void SetWeightOfAll(int weight)
         {
@@ -65,6 +69,16 @@ namespace KaimiraGames
         }
 
         public int TotalWeight => _totalWeight;
+
+        /// <summary>
+        /// Minimum weight in the structure. 0 if Count == 0.
+        /// </summary>
+        public int MinWeight => _minWeight;
+
+        /// <summary>
+        /// Maximum weight in the structure. 0 if Count == 0.
+        /// </summary>
+        public int MaxWeight => _maxWeight;
 
         public IReadOnlyList<T> Items => _list.AsReadOnly();
 
@@ -78,6 +92,7 @@ namespace KaimiraGames
             _weights.Add(FixWeight(weight));
             Recalculate();
         }
+
         public void Add(ICollection<WeightedListItem<T>> listItems)
         {
             foreach (WeightedListItem<T> listItem in listItems)
@@ -143,6 +158,10 @@ namespace KaimiraGames
             sb.Append(typeof(T).Name);
             sb.Append(">: TotalWeight:");
             sb.Append(TotalWeight);
+            sb.Append(", Min:");
+            sb.Append(_minWeight);
+            sb.Append(", Max:");
+            sb.Append(_maxWeight);
             sb.Append(", Count:");
             sb.Append(Count);
             sb.Append(", {");
@@ -164,6 +183,8 @@ namespace KaimiraGames
         private readonly Random _rand;
         private int _totalWeight;
         private bool _areAllProbabilitiesIdentical = false;
+        private int _minWeight;
+        private int _maxWeight;
 
         /// <summary>
         /// https://www.keithschwarz.com/darts-dice-coins/
@@ -172,8 +193,8 @@ namespace KaimiraGames
         {
             _totalWeight = 0;
             _areAllProbabilitiesIdentical = false;
-            int minWeight = 0;
-            int maxWeight = 0;
+            _minWeight = 0;
+            _maxWeight = 0;
             bool isFirst = true;
 
             _alias.Clear(); // STEP 1
@@ -186,11 +207,11 @@ namespace KaimiraGames
             {
                 if (isFirst)
                 {
-                    minWeight = maxWeight = weight;
+                    _minWeight = _maxWeight = weight;
                     isFirst = false;
                 }
-                minWeight = (weight < minWeight) ? weight : minWeight;
-                maxWeight = (maxWeight < weight) ? weight : maxWeight;
+                _minWeight = (weight < _minWeight) ? weight : _minWeight;
+                _maxWeight = (_maxWeight < weight) ? weight : _maxWeight;
                 _totalWeight += weight;
                 scaledProbabilityNumerator.Add(weight * Count); // STEP 3 
                 _alias.Add(0);
@@ -198,7 +219,7 @@ namespace KaimiraGames
             }
 
             // Degenerate case, all probabilities are equal.
-            if (minWeight == maxWeight)
+            if (_minWeight == _maxWeight)
             {
                 _areAllProbabilitiesIdentical = true;
                 return;
