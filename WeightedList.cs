@@ -53,6 +53,8 @@ namespace KaimiraGames
 
         public void AddWeightToAll(int weight)
         {
+            if (weight + _minWeight <= 0 && BadWeightErrorHandling == ThrowExceptionOnAdd) 
+                throw new ArgumentException($"Subtracting {-1 * weight} from all items would set weight to non-positive for at least one element.");
             for (int i = 0; i < Count; i++)
             {
                 _weights[i] = FixWeight(_weights[i] + weight);
@@ -64,6 +66,8 @@ namespace KaimiraGames
 
         public void SetWeightOfAll(int weight)
         {
+            if (weight <= 0 && BadWeightErrorHandling == ThrowExceptionOnAdd)
+                throw new ArgumentException($"Cannot set weight to <1.");
             for (int i = 0; i < Count; i++) _weights[i] = FixWeight(weight);
             Recalculate();
         }
