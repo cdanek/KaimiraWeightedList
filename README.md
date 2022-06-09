@@ -2,11 +2,13 @@
 
 ## Introduction
 
-This implements an algorithm (designed by Michael Vose) for sampling from a discrete probability distribution via a generic list with extremely fast `O(1)` get operations and small (close to minimally small) `O(n)` space complexity and `O(n)` CRUD complexity. 
+TLDR: Add items to a list with an integer weight, and get items randomly from the list based on the weight. 
 
-In other words, you can add any item of type `T` to a `List` with an integer weight, and get a random item from the list with probability ( weight / sum-weights ). The solution is implemented using the Walker-Vose "Alias Method". 
+This class implements an algorithm for sampling from a discrete probability distribution via a generic list with extremely fast `O(1)` get operations and small (close to minimally small) `O(n)` space complexity and `O(n)` CRUD complexity. 
 
-It can be used with any type, similarly to a `List<T>`, and was designed to be as easy to use as possible.
+In other words, you can add any item of type `T` to a `List` with an integer weight, and get a random item from the list with probability ( weight / sum-weights ). The solution is implemented using the [Walker-Vose "Alias Method"](https://en.wikipedia.org/wiki/Alias_method). 
+
+It can be used with any type, similarly to a `List<T>`, and was designed to be fast AND as easy to use as possible.
 
 ## Installation and Usage
 
@@ -53,8 +55,8 @@ myWL.Add("Goodbye, World.", 5); // OK
 myWL.SetWeight("Goodbye, World.", 0); // ArgumentException - Weight cannot be non-positive.
 myWL.SetWeightOfAll(0); // ArgumentException - Weight cannot be non-positive.
 myWL.SetWeightAtIndex(0, 0); // ArgumentException - Weight cannot be non-positive.
-myWL.SubtractWeightFromAll(5); // ArgumentException - Subtracting 5 from all items would set weight to non-positive for at least one element.
 myWL.AddWeightFromAll(-5); // ArgumentException - Subtracting 5 from all items would set weight to non-positive for at least one element.
+myWL.SubtractWeightFromAll(5); // ArgumentException - Subtracting 5 from all items would set weight to non-positive for at least one element.
 myWL.SubtractWeightFromAll(4); // OK - weight is now 1 
 
 myWL.BadWeightErrorHandling = WeightErrorHandlingType.SetWeightToOne; // default
@@ -135,9 +137,11 @@ This algorithm is strictly better (better across all dimensions) than any others
 2) "CRUD" operations (`private Recalculate()`, called on any operations that change any weight) - O(n)
 3) Memory usage / Space complexity (in the resting state, elements are limited to one `List<T>`, one `enum`, three `int`s, one `Random`, one `bool`, and three `List<int>`s; in the calculating states we add a few working variables) - O(n)
 
-I have made one small improvement based on the idea from [joseftw](https://github.com/joseftw/), which eliminates all of the instability of floating point numbers by enforcing integer weight. This leads to "perfect" filling of the alias/probability matrix (described by Keith Schwarz) with the downside of limiting small probability to `1 / Int32.IntMax` in C#: approximately 1 in 2.1 million. If you need accurate probabilities with greater precision for very small chances, you could simply change all instances of `int` to `long`, giving you small probabilities down to 1 in 9.2 quintillion (9.2e18) at the cost of increased memory use. You'd also need to upgrade the Random number generator, as `Random.NextInt64()` doesn't appear in .NET until .NET6 (and I didn't want to place that requirement here).
+I have made one small improvement based on the idea from [joseftw](https://github.com/joseftw/), which eliminates all of the instability of floating point numbers by enforcing integer weight. This leads to "perfect" filling of the alias/probability matrix (described by Keith Schwarz) with the downside of limiting total weight to `1 / Int32.IntMax` in C#: approximately 2.1 million. If you need accurate probabilities with greater precision for very small chances, you can change all instances of `int` to `long`, giving you total weight of up to 1 in 9.2 quintillion (9.2e18) at the cost of increased memory use. You'd also need to upgrade the Random number generator, as `Random.NextInt64()` doesn't appear in .NET until .NET6 (and I didn't want to place that requirement here).
 
-Additionally, you will get an overflow exception if the sum of your weights exceeds 2.1 million. Again, if you need accurate probabilities with enough items such that the total weight exceeds this, I'd suggest either evaluating your weights and "reducing" them by an acceptable amount periodicially.
+This should be large enough for most conventional use of the structure - it will be accurate for around up to 1000 items with average weights of 2000. 
+
+If you need accurate probabilities with enough items such that the total weight exceeds this, I'd suggest either evaluating your weights and "reducing" them by an acceptable amount periodicially OR upgrading the code to use `long` and `Rand.NextInt64()`. 
 
 ## License
 
