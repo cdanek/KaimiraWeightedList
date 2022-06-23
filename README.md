@@ -78,7 +78,7 @@ WeightedList<string> myWL = new(rand);
 
 I've added a number of methods that appear in `IList<T>`. 
 
-Be aware that while you are _able_ to modify the weight while iterating (by getting an iterator, getting the index of the element, and setting the weight of the element at said index) is not a great idea. It works, but will recalculate on every iteration (which means O(n^2) performance for your loop). 
+Be aware that while you are _able_ to modify the weight while iterating (by getting an iterator, getting the index of the element, and setting the weight of the element at said index) is not a great idea. It works, but will recalculate on every iteration (which means O(n<sup>2</sup>) performance for your loop). 
 
 If you want to modify the weight of everything in the list, use `AddWeightToAll(int)`, `SubtractWeightFromAll(int)`, or `SetWeightOfAll(int)`.
 
