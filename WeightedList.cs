@@ -10,9 +10,9 @@ using static KaimiraGames.WeightErrorHandlingType;
 namespace KaimiraGames
 {
     /// <summary>
-    /// This implements an algorithm for sampling from a discrete probability distribution via a generic list 
-    /// with extremely fast O(1) get operations and small (close to minimally small) O(n) space complexity and 
-    /// O(n) CRUD complexity. In other words, you can add any item of type T to a List with an integer weight, 
+    /// This implements an algorithm for sampling from a discrete probability distribution via a generic list
+    /// with extremely fast O(1) get operations and small (close to minimally small) O(n) space complexity and
+    /// O(n) CRUD complexity. In other words, you can add any item of type T to a List with an integer weight,
     /// and get a random item from the list with probability ( weight / sum-weights ).
     /// </summary>
     public class WeightedList<T> : IEnumerable<T>
@@ -53,7 +53,7 @@ namespace KaimiraGames
 
         public void AddWeightToAll(int weight)
         {
-            if (weight + _minWeight <= 0 && BadWeightErrorHandling == ThrowExceptionOnAdd) 
+            if (weight + _minWeight <= 0 && BadWeightErrorHandling == ThrowExceptionOnAdd)
                 throw new ArgumentException($"Subtracting {-1 * weight} from all items would set weight to non-positive for at least one element.");
             for (int i = 0; i < Count; i++)
             {
@@ -66,8 +66,7 @@ namespace KaimiraGames
 
         public void SetWeightOfAll(int weight)
         {
-            if (weight <= 0 && BadWeightErrorHandling == ThrowExceptionOnAdd)
-                throw new ArgumentException($"Weight cannot be non-positive.");
+            if (weight <= 0 && BadWeightErrorHandling == ThrowExceptionOnAdd) throw new ArgumentException("Weight cannot be non-positive.");
             for (int i = 0; i < Count; i++) _weights[i] = FixWeight(weight);
             Recalculate();
         }
@@ -264,12 +263,14 @@ namespace KaimiraGames
             }
 
             // STEP 7 - Can't happen for this implementation but left in source to match Keith Schwarz's algorithm
+            #pragma warning disable S125 // Sections of code should not be commented out
             //while (small.Count > 0)
             //{
             //    int l = small[0]; // 7.1
             //    small.RemoveAt(0);
             //    _probabilities[l] = _totalWeight;
             //}
+            #pragma warning restore S125 // Sections of code should not be commented out
         }
 
         // Adjust bad weights silently.
@@ -279,7 +280,6 @@ namespace KaimiraGames
         internal static int FixWeightExceptionOnAdd(int weight) => (weight <= 0) ? throw new ArgumentException("Weight cannot be non-positive") : weight;
 
         private int FixWeight(int weight) => (BadWeightErrorHandling == ThrowExceptionOnAdd) ? FixWeightExceptionOnAdd(weight) : FixWeightSetToOne(weight);
-
     }
 
     /// <summary>
