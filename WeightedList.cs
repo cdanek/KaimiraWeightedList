@@ -266,8 +266,8 @@ namespace KaimiraGames
             #pragma warning disable S125 // Sections of code should not be commented out
             //while (small.Count > 0)
             //{
-            //    int l = small[0]; // 7.1
-            //    small.RemoveAt(0);
+            //    int l = small[^1]; // 7.1
+            //    small.RemoveAt(small.Count - 1);
             //    _probabilities[l] = _totalWeight;
             //}
             #pragma warning restore S125 // Sections of code should not be commented out
@@ -287,7 +287,7 @@ namespace KaimiraGames
     /// and Add() to the WeightedList for a single calculation pass.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class WeightedListItem<T>
+    public readonly struct WeightedListItem<T>
     {
         internal readonly T _item;
         internal readonly int _weight;
