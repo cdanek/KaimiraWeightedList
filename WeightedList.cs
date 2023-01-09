@@ -240,10 +240,10 @@ namespace KaimiraGames
             // STEP 5
             while (small.Count > 0 && large.Count > 0)
             {
-                int l = small[0]; // 5.1
-                small.RemoveAt(0);
-                int g = large[0]; // 5.2
-                large.RemoveAt(0);
+                int l = small[^1]; // 5.1
+                small.RemoveAt(small.Count - 1);
+                int g = large[^1]; // 5.2
+                large.RemoveAt(large.Count - 1);
                 _probabilities[l] = scaledProbabilityNumerator[l]; // 5.3
                 _alias[l] = g; // 5.4
                 int tmp = scaledProbabilityNumerator[g] + scaledProbabilityNumerator[l] - _totalWeight; // 5.5, even though using ints for this algorithm is stable
@@ -257,8 +257,8 @@ namespace KaimiraGames
             // STEP 6
             while (large.Count > 0)
             {
-                int g = large[0]; // 6.1
-                large.RemoveAt(0);
+                int g = large[^1]; // 6.1
+                large.RemoveAt(large.Count - 1);
                 _probabilities[g] = _totalWeight; //6.1
             }
 
