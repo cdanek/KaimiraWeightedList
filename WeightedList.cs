@@ -1,11 +1,13 @@
 // License: MIT
 // Source, Docs, Issues: https://github.com/cdanek/kaimira-weighted-list/
 
-using System.Text;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
 using static KaimiraGames.WeightErrorHandlingType;
+using Random = System.Random;
 
 namespace KaimiraGames
 {
@@ -15,7 +17,8 @@ namespace KaimiraGames
     /// O(n) CRUD complexity. In other words, you can add any item of type T to a List with an integer weight,
     /// and get a random item from the list with probability ( weight / sum-weights ).
     /// </summary>
-    public class WeightedList<T> : IEnumerable<T>
+    [Serializable]
+    public class WeightedList<T> : IEnumerable<T>, ISerializationCallbackReceiver
     {
         /// <summary>
         /// Create a new WeightedList with an optional System.Random.
@@ -23,7 +26,7 @@ namespace KaimiraGames
         /// <param name="rand"></param>
         public WeightedList(Random rand = null)
         {
-            _rand = rand ?? new Random();
+            _rand = rand ?? new();
         }
 
         /// <summary>
@@ -31,11 +34,11 @@ namespace KaimiraGames
         /// </summary>
         public WeightedList(ICollection<WeightedListItem<T>> listItems, Random rand = null)
         {
-            _rand = rand ?? new Random();
+            _rand = rand ?? new();
             foreach (WeightedListItem<T> item in listItems)
             {
-                _list.Add(item._item);
-                _weights.Add(item._weight);
+                _list.Add(item.item);
+                _weights.Add(item.weight);
             }
             Recalculate();
         }
@@ -100,8 +103,8 @@ namespace KaimiraGames
         {
             foreach (WeightedListItem<T> listItem in listItems)
             {
-                _list.Add(listItem._item);
-                _weights.Add(FixWeight(listItem._weight));
+                _list.Add(listItem.item);
+                _weights.Add(FixWeight(listItem.weight));
             }
             Recalculate();
         }
@@ -280,6 +283,24 @@ namespace KaimiraGames
         internal static int FixWeightExceptionOnAdd(int weight) => (weight <= 0) ? throw new ArgumentException("Weight cannot be non-positive") : weight;
 
         private int FixWeight(int weight) => (BadWeightErrorHandling == ThrowExceptionOnAdd) ? FixWeightExceptionOnAdd(weight) : FixWeightSetToOne(weight);
+
+
+        [SerializeField] private List<WeightedListItem<T>> _serializeWeightedItems;
+        public void OnBeforeSerialize()
+        {
+            if (_serializeWeightedItems == null) _serializeWeightedItems = new();
+            _serializeWeightedItems.Clear();
+            for (int i = 0; i < _list.Count; i++)
+            {
+                _serializeWeightedItems.Add(new(_list[i], _weights[i]));
+            }
+        }
+
+        public void OnAfterDeserialize()
+        {
+            Clear();
+            Add(_serializeWeightedItems);
+        }
     }
 
     /// <summary>
@@ -287,15 +308,16 @@ namespace KaimiraGames
     /// and Add() to the WeightedList for a single calculation pass.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public readonly struct WeightedListItem<T>
+    [Serializable]
+    public struct WeightedListItem<T>
     {
-        internal readonly T _item;
-        internal readonly int _weight;
+        public T item;
+        public int weight;
 
         public WeightedListItem(T item, int weight)
         {
-            _item = item;
-            _weight = weight;
+            this.item = item;
+            this.weight = weight;
         }
     }
 
