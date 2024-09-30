@@ -1,10 +1,10 @@
 // License: MIT
 // Source, Docs, Issues: https://github.com/cdanek/kaimira-weighted-list/
 
-using System.Text;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using static KaimiraGames.WeightErrorHandlingType;
 
 namespace KaimiraGames
@@ -113,7 +113,7 @@ namespace KaimiraGames
             Recalculate();
         }
 
-        public void Contains(T item) => _list.Contains(item);
+        public bool Contains(T item) => _list.Contains(item);
 
         public int IndexOf(T item) => _list.IndexOf(item);
 
@@ -156,7 +156,7 @@ namespace KaimiraGames
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             sb.Append("WeightedList<");
             sb.Append(typeof(T).Name);
             sb.Append(">: TotalWeight:");
@@ -179,10 +179,10 @@ namespace KaimiraGames
             return sb.ToString();
         }
 
-        private readonly List<T> _list = new List<T>();
-        private readonly List<int> _weights = new List<int>();
-        private readonly List<int> _probabilities = new List<int>();
-        private readonly List<int> _alias = new List<int>();
+        private readonly List<T> _list = new();
+        private readonly List<int> _weights = new();
+        private readonly List<int> _probabilities = new();
+        private readonly List<int> _alias = new();
         private readonly Random _rand;
         private int _totalWeight;
         private bool _areAllProbabilitiesIdentical = false;
@@ -203,9 +203,9 @@ namespace KaimiraGames
             _alias.Clear(); // STEP 1
             _probabilities.Clear(); // STEP 1
 
-            List<int> scaledProbabilityNumerator = new List<int>(Count);
-            List<int> small = new List<int>(Count); // STEP 2
-            List<int> large = new List<int>(Count); // STEP 2
+            List<int> scaledProbabilityNumerator = new(Count);
+            List<int> small = new(Count); // STEP 2
+            List<int> large = new(Count); // STEP 2
             foreach (int weight in _weights)
             {
                 if (isFirst)
@@ -263,14 +263,14 @@ namespace KaimiraGames
             }
 
             // STEP 7 - Can't happen for this implementation but left in source to match Keith Schwarz's algorithm
-            #pragma warning disable S125 // Sections of code should not be commented out
+#pragma warning disable S125 // Sections of code should not be commented out
             //while (small.Count > 0)
             //{
             //    int l = small[^1]; // 7.1
             //    small.RemoveAt(small.Count - 1);
             //    _probabilities[l] = _totalWeight;
             //}
-            #pragma warning restore S125 // Sections of code should not be commented out
+#pragma warning restore S125 // Sections of code should not be commented out
         }
 
         // Adjust bad weights silently.
