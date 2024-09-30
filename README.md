@@ -102,7 +102,7 @@ public class WeightedList<T> : IEnumerable<T>
 
     public void AddWeightToAll(int weight);
     public void Clear();
-    public void Contains(T item);
+    public bool Contains(T item);
     public IEnumerator<T> GetEnumerator();
     public int GetWeightAtIndex(int index);
     public int GetWeightOf(T item);
