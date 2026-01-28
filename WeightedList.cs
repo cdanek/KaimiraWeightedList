@@ -27,6 +27,20 @@ namespace KaimiraGames
         }
 
         /// <summary>
+        /// Create a WeightedList with the provided items, function to get weight per item and an optional System.Random.
+        /// </summary>
+        public WeightedList(IEnumerable<T> listItems, Func<T, int> getWeight, Random rand = null)
+        {
+            _rand = rand ?? new Random();
+            foreach (var item in listItems)
+            {
+                _list.Add(item);
+                _weights.Add(getWeight(item));
+            }
+            Recalculate();
+        }
+
+        /// <summary>
         /// Create a WeightedList with the provided items and an optional System.Random.
         /// </summary>
         public WeightedList(ICollection<WeightedListItem<T>> listItems, Random rand = null)
